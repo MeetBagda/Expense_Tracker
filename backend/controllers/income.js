@@ -1,48 +1,69 @@
 const IncomeSchema = require("../models/incomeModel");
 
-exports.addIncome = async (req,res)=>{
-    const {title, amount, category, description, date} = req.body;
-
-    const income = IncomeSchema({
-        title,
-        amount,
-        category,
-        description,
-        date,
-    }) 
+exports.addIncome = async (req, res) => {
+    const { title, amount, category, description, date } = req.body;
 
     try {
         // validation
-        if(!title||!amount||!category||!description) {
-            return res.status(400).json({message:'All fields are required'})
+        if (!title || !category || !description || !date) {
+            const errorMessage = 'All fields are required';
+            console.error(`Validation Error: ${errorMessage}`);
+            return res.status(400).json({ message: errorMessage });
         }
-        if(amount<=0 || !amount === 'number') {
-            return res.status(400).json({message:'Amount must be a number and a number greater than 0'})
-        }
-        await income.save()
-        res.status(200).json({message:'Income Added successfully'})
-    } catch (error) {
-        res.status(500).json({message:'Server Error'})
-    }
-    console.log(income);
-}
 
-exports.getIncome = async (req,res)=>{
+        // Check if amount is a valid number
+        if (isNaN(Number(amount)) || Number(amount) <= 0) {
+            const errorMessage = 'Amount must be a valid number greater than 0';
+            console.error(`Validation Error: ${errorMessage}`);
+            return res.status(400).json({ message: errorMessage });
+        }
+
+        const income = new IncomeSchema({
+            title,
+            amount,
+            category,
+            description,
+            date,
+        });
+
+        await income.save();
+        const successMessage = 'Income Added successfully';
+        console.log(`Success: ${successMessage}`);
+        res.status(200).json({ message: successMessage });
+        console.log(income)
+    } catch (error) {
+        console.error(`Error: ${error}`);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+
+
+exports.getIncome = async (req, res) => {
     try {
-        const incomes = await IncomeSchema.find().sort({createdAt: -1})
-        res.status(200).json(incomes)
+        const incomes = await IncomeSchema.find().sort({ createdAt: -1 });
+        res.status(200).json(incomes);
+        console.log('Success: Get Income request successful');
     } catch (error) {
-        res.status(500).json('Server Error')
+        res.status(500).json('Server Error');
+        console.error(`Error: ${error}`);
     }
-}
+};
 
+exports.deleteIncome = async (req, res) => {
+    const { id } = req.params;
 
-exports.deleteIncome = async (req,res)=>{
-    const {id} = req.params;
-    // console.log(req.params) //it will shows id of the object 
-    IncomeSchema.findByIdAndDelete(id).then((income)=>{
-        res.status(200).json({message:'Income Deleted!!!!'})
-    }).catch((error)=>{
-        res.status(400).json({message:"No such income found"})
-    });
-}
+    try {
+        const income = await IncomeSchema.findByIdAndDelete(id);
+        if (income) {
+            res.status(200).json({ message: 'Income Deleted!!!!' });
+            console.log('Success: Delete Income request successful');
+        } else {
+            res.status(400).json({ message: 'No such income found' });
+            console.error('Error: No such income found');
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error' });
+        console.error(`Error: ${error}`);
+    }
+};
